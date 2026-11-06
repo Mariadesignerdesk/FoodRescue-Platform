@@ -94,6 +94,29 @@ src/
   types/        Shared TypeScript domain types
 ```
 
+## MCP and External Tool Integrations
+
+FoodRescue's AI-assisted development workflow uses:
+
+- **GitHub MCP** to connect the AI coding agent with the FoodRescue GitHub repository.
+- **Atlassian Rovo MCP** to connect the AI coding agent with Jira.
+
+The intended workflow is: Jira tasks are read by the AI agent; the agent follows the reusable FoodRescue Skill, makes focused code changes, and supports code review. Changes can then be committed and submitted as GitHub pull requests linked to their Jira task IDs.
+
+The GitHub MCP and Atlassian Rovo MCP servers are configured locally through the VS Code MCP configuration file, `.vscode/mcp.json`. Authentication credentials must be supplied securely and must never be committed to GitHub. Appropriate account permissions are required for these integrations.
+
+## Integration Limitations
+
+- MCP access depends on valid authentication, account permissions, server availability, and compatible tool support.
+- Jira and GitHub actions are limited by the permissions of the connected accounts.
+- AI-generated code must be reviewed and tested by a human before use.
+- Supabase features require correctly configured environment variables, database schema, RPC functions, Storage bucket, and access policies.
+- Landing-page featured listings and impact figures include demonstration content; they are not live database records.
+- Supabase-backed features require an internet connection and an available Supabase service.
+
 ## AI Agent Development Skill
 
-FoodRescue includes reusable AI agent development instructions in the [FoodRescue development Skill](.github/skills/foodrescue-development/SKILL.md). It guides agents on project architecture, Supabase workflows, coding practices, and verification.
+FoodRescue includes a reusable [development Skill](.github/skills/foodrescue-development/SKILL.md) at `.github/skills/foodrescue-development/SKILL.md`. It guides agents through the project's architecture and React/TypeScript conventions, Supabase authentication and data workflows, security and privacy practices, error handling, and verification using the project's actual scripts.
+
+The Skill gives future tasks a consistent set of project-specific instructions, reducing repeated prompts and explanations. Its guidance encourages focused changes, reliable error handling, and verification to support code quality and long-term maintainability. This Skill was used during FoodRescue development.
+git add README.md
