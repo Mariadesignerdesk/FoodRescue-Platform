@@ -10,7 +10,6 @@ import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { cn } from '../../lib/cn'
 import { useAuth } from '../../context/useAuth'
-import { DemoNotice } from './DemoNotice'
 import { Logo } from './Logo'
 
 const navItems = [
@@ -34,13 +33,20 @@ function SidebarLinks({ onNavigate }: { onNavigate?: () => void }) {
               cn(
                 'flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition',
                 isActive
-                  ? 'bg-sage text-forest'
+                  ? 'bg-sage !text-forest'
                   : 'text-cream/80 hover:bg-white/10 hover:text-cream',
               )
             }
           >
-            <Icon className="h-4 w-4" aria-hidden="true" />
-            {item.label}
+            {({ isActive }) => (
+              <>
+                <Icon
+                  className={cn('h-4 w-4', isActive ? '!text-forest' : 'text-cream/80')}
+                  aria-hidden="true"
+                />
+                {item.label}
+              </>
+            )}
           </NavLink>
         )
       })}
@@ -108,7 +114,8 @@ export function AppShell() {
               <Logo inverted />
               <button
                 type="button"
-                className="grid h-9 w-9 place-items-center rounded-full border border-white/20"
+                aria-label="Close sidebar"
+                className="grid h-9 w-9 place-items-center rounded-full border border-white/20 text-cream transition hover:bg-white/10"
                 onClick={() => setOpen(false)}
               >
                 <X className="h-4 w-4" />
@@ -123,7 +130,7 @@ export function AppShell() {
         <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-forest/10 bg-cream/85 px-4 py-3 backdrop-blur-xl sm:px-6">
           <button
             type="button"
-            className="grid h-10 w-10 place-items-center rounded-full border border-forest/15 lg:hidden"
+            className="grid h-10 w-10 place-items-center rounded-full border border-forest/15 text-forest lg:hidden"
             onClick={() => setOpen(true)}
           >
             <Menu className="h-5 w-5" />
@@ -134,7 +141,7 @@ export function AppShell() {
           </p>
           <NavLink
             to="/donate"
-            className="ml-auto inline-flex rounded-full bg-forest px-4 py-2 text-sm font-semibold text-cream"
+            className="ml-auto inline-flex rounded-full bg-forest px-4 py-2 text-sm font-semibold !text-cream hover:!text-cream focus-visible:!text-cream"
           >
             New listing
           </NavLink>
@@ -170,9 +177,6 @@ export function AppShell() {
             {authError}
           </p>
         ) : null}
-        <div className="px-4 pt-4 sm:px-6">
-          <DemoNotice />
-        </div>
         <main className="px-4 py-6 sm:px-6 lg:px-8">
           <Outlet />
         </main>

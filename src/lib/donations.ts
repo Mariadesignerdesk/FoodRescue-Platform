@@ -203,6 +203,73 @@ export type CreatedDonation = CreateDonationInput & {
   picked_up_at: string | null
 }
 
+export type UploadedDonationImage = {
+  path: string
+  publicUrl: string
+}
+
+const donationImageBucket = 'donation-images'
+const donationImageTypes: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+}
+const maxDonationImageSize = 5 * 1024 * 1024
+
+export async function uploadDonationImage(
+  file: File,
+  donorId: string,
+): Promise<UploadedDonationImage> {
+  const extension = donationImageTypes[file.type]
+  if (!extension) {
+    throw new Error('Choose a JPEG, PNG, or WebP image.')
+  }
+  if (file.size > maxDonationImageSize) {
+    throw new Error('The image must be 5 MB or smaller.')
+  }
+  if (!donorId) {
+    throw new Error('Sign in before uploading a donation image.')
+  }
+
+  const path = `${donorId}/${crypto.randomUUID()}.${extension}`
+  const { data, error } = await supabase.storage
+    .from(donationImageBucket)
+    .upload(path, file, {
+      contentType: file.type,
+      upsert: false,
+    })
+
+  if (error) {
+    console.error('[donations] Donation image upload failed.', {
+      message: error.message,
+      name: error.name,
+    })
+    throw new Error(`Could not upload the donation image: ${error.message}`)
+  }
+
+  const { data: publicUrlData } = supabase.storage
+    .from(donationImageBucket)
+    .getPublicUrl(data.path)
+
+  if (!publicUrlData.publicUrl) {
+    throw new Error('The image uploaded, but its public URL could not be generated.')
+  }
+
+  return { path: data.path, publicUrl: publicUrlData.publicUrl }
+}
+
+export async function removeDonationImage(path: string): Promise<void> {
+  const { error } = await supabase.storage.from(donationImageBucket).remove([path])
+
+  if (error) {
+    console.error('[donations] Donation image cleanup failed.', {
+      message: error.message,
+      name: error.name,
+    })
+    throw new Error(`Could not remove the uploaded image: ${error.message}`)
+  }
+}
+
 export async function reserveDonation(donationId: string): Promise<string> {
   const { data, error } = await supabase.rpc('reserve_food', {
     p_donation_id: donationId,
@@ -290,12 +357,14 @@ export async function createDonation(
 }
 
 export async function fetchAvailableDonations(): Promise<Donation[]> {
+  const currentTime = new Date().toISOString()
   const { data, error } = await supabase
     .from('donations')
     .select(
       'id, title, description, category, quantity, weight_kg, unit, servings, pickup_location, pickup_time, picked_up_at, image_url, profiles(full_name, organization_name)',
     )
     .eq('status', 'available')
+    .gt('pickup_time', currentTime)
     .order('pickup_time', { ascending: true })
 
   if (error) {
@@ -328,8 +397,16 @@ export async function fetchMyDonations(donorId: string): Promise<Donation[]> {
     throw error
   }
 
+  const currentTime = Date.now()
   return (data as MyDonationRecord[]).map((record) => {
-    const status = record.status === 'picked_up' ? 'collected' : record.status
+    let status = record.status === 'picked_up' ? 'collected' : record.status
+    if (
+      status === 'available' &&
+      new Date(record.pickup_time).getTime() <= currentTime
+    ) {
+      status = 'expired'
+    }
+
     if (!isDonationStatus(status)) {
       throw new Error(`Donation ${record.id} has an unsupported status.`)
     }

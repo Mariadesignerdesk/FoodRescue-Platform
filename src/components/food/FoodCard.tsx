@@ -78,7 +78,7 @@ export function FoodCard({ donation, sessionTag = false, action }: FoodCardProps
             type="button"
             onClick={action.onClick}
             disabled={action.disabled}
-            className="mt-1 inline-flex items-center justify-center rounded-full bg-forest px-4 py-2.5 text-sm font-semibold text-cream transition hover:bg-forest-deep disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
+            className="mt-1 inline-flex items-center justify-center rounded-full bg-forest px-4 py-2.5 text-sm font-semibold text-cream transition hover:bg-forest-deep disabled:cursor-not-allowed disabled:border disabled:border-forest/20 disabled:bg-sage disabled:text-forest"
           >
             {action.label}
           </button>

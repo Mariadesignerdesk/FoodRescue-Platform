@@ -14,7 +14,7 @@ import type {
 } from '../types/food'
 
 export const DEMO_NOTICE =
-  'Donation submissions and Browse listings use Supabase. Reservations, dashboard metrics, and other sections remain demonstration data.'
+  'Sample impact figures and featured listings are shown for illustration.'
 
 export const DEMO_CURRENT_DONOR = 'Harvest Table'
 

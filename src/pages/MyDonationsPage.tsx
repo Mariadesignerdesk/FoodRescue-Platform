@@ -317,7 +317,7 @@ export function MyDonationsPage() {
                       type="button"
                       onClick={() => void handleCancelReservation(reservation)}
                       disabled={cancellingReservationId !== null}
-                      className="rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-800 transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-60"
+                      className="rounded-full border border-red-200 px-4 py-2 text-sm font-semibold text-red-800 transition hover:bg-red-50 disabled:cursor-wait disabled:bg-sage disabled:text-red-800 disabled:border-red-200"
                     >
                       {cancellingReservationId === reservation.id
                         ? 'Cancelling…'
@@ -343,7 +343,7 @@ export function MyDonationsPage() {
                       type="button"
                       onClick={() => void handleCompletePickup(reservation)}
                       disabled={completingPickupId !== null}
-                      className="rounded-full bg-forest px-4 py-2 text-sm font-semibold text-cream transition hover:bg-forest-deep disabled:cursor-wait disabled:opacity-60"
+                      className="rounded-full bg-forest px-4 py-2 text-sm font-semibold text-cream transition hover:bg-forest-deep disabled:cursor-wait disabled:border disabled:border-forest/20 disabled:bg-sage disabled:text-forest"
                     >
                       {completingPickupId === reservation.id
                         ? 'Completing…'

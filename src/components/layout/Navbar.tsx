@@ -84,7 +84,7 @@ export function Navbar() {
         </div>
         <button
           type="button"
-          className="grid h-10 w-10 place-items-center rounded-full border border-cream/20 md:hidden"
+          className="grid h-10 w-10 place-items-center rounded-full border border-cream/20 text-cream md:hidden"
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen((value) => !value)}
@@ -125,7 +125,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={handleSignOut}
-                className="shrink-0 rounded-full border border-cream/25 px-3 py-1.5 text-xs font-semibold"
+                className="shrink-0 rounded-full border border-cream/25 px-3 py-1.5 text-xs font-semibold text-cream"
               >
                 Sign out
               </button>

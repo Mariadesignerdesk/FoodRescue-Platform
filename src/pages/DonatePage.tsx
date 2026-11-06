@@ -1,8 +1,13 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
-import { createDonation, type CreatedDonation } from '../lib/donations'
-import { isHttpUrl } from '../lib/format'
+import {
+  createDonation,
+  removeDonationImage,
+  uploadDonationImage,
+  type CreatedDonation,
+  type UploadedDonationImage,
+} from '../lib/donations'
 import {
   CATEGORY_LABELS,
   type DonationCategory,
@@ -20,7 +25,6 @@ type FormState = {
   donorType: DonorType | ''
   location: string
   pickupTime: string
-  imageUrl: string
   allergens: string
 }
 
@@ -35,13 +39,14 @@ const emptyForm: FormState = {
   donorType: 'restaurant',
   location: '',
   pickupTime: '',
-  imageUrl: '',
   allergens: '',
 }
 
-type FormErrors = Partial<Record<keyof FormState, string>>
+type FormErrors = Partial<Record<keyof FormState | 'image', string>>
+const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp']
+const maxImageSize = 5 * 1024 * 1024
 
-function validate(form: FormState): FormErrors {
+function validate(form: FormState, image: File | null): FormErrors {
   const errors: FormErrors = {}
   if (form.title.trim().length < 3) errors.title = 'Add a title of at least 3 characters.'
   if (form.description.trim().length < 12) {
@@ -67,7 +72,13 @@ function validate(form: FormState): FormErrors {
   } else if (pickupTime.getTime() <= Date.now()) {
     errors.pickupTime = 'Pickup availability must end in the future.'
   }
-  if (!isHttpUrl(form.imageUrl.trim())) errors.imageUrl = 'Enter a valid http(s) image URL.'
+  if (!image) {
+    errors.image = 'Choose a JPEG, PNG, or WebP image to continue.'
+  } else if (!allowedImageTypes.includes(image.type)) {
+    errors.image = 'Choose a JPEG, PNG, or WebP image.'
+  } else if (image.size > maxImageSize) {
+    errors.image = 'The image must be 5 MB or smaller.'
+  }
   return errors
 }
 
@@ -79,13 +90,23 @@ export function DonatePage() {
   } = useAuth()
   const [form, setForm] = useState<FormState>(emptyForm)
   const [errors, setErrors] = useState<FormErrors>({})
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState<CreatedDonation | null>(null)
-  const [imageFailed, setImageFailed] = useState(false)
+  const [imagePreviewFailed, setImagePreviewFailed] = useState(false)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'checking' | 'saving'>('idle')
+  const [submissionStatus, setSubmissionStatus] = useState<
+    'idle' | 'checking' | 'uploading' | 'saving'
+  >('idle')
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const previewReady = isHttpUrl(form.imageUrl.trim()) && !imageFailed
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
+
   const validationMessages = Object.values(errors).filter(
     (message): message is string => Boolean(message),
   )
@@ -102,10 +123,43 @@ export function DonatePage() {
         setErrors((current) => ({ ...current, [key]: undefined }))
         setSubmitError(null)
         setSubmissionStatus('idle')
-        if (key === 'imageUrl') setImageFailed(false)
       },
     [],
   )
+
+  function handleImageChange(file: File | null) {
+    if (!file) return
+
+    setSubmitError(null)
+    setSubmissionStatus('idle')
+    if (!allowedImageTypes.includes(file.type)) {
+      setSelectedImage(null)
+      setPreviewUrl(null)
+      setErrors((current) => ({ ...current, image: 'Choose a JPEG, PNG, or WebP image.' }))
+      if (imageInputRef.current) imageInputRef.current.value = ''
+      return
+    }
+    if (file.size > maxImageSize) {
+      setSelectedImage(null)
+      setPreviewUrl(null)
+      setErrors((current) => ({ ...current, image: 'The image must be 5 MB or smaller.' }))
+      if (imageInputRef.current) imageInputRef.current.value = ''
+      return
+    }
+
+    setSelectedImage(file)
+    setPreviewUrl(URL.createObjectURL(file))
+    setImagePreviewFailed(false)
+    setErrors((current) => ({ ...current, image: undefined }))
+  }
+
+  function removeSelectedImage() {
+    setSelectedImage(null)
+    setPreviewUrl(null)
+    setImagePreviewFailed(false)
+    setErrors((current) => ({ ...current, image: undefined }))
+    if (imageInputRef.current) imageInputRef.current.value = ''
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -130,10 +184,10 @@ export function DonatePage() {
       return
     }
 
-    const nextErrors = validate(form)
+    const nextErrors = validate(form, selectedImage)
     setErrors(nextErrors)
     const invalidFields = Object.keys(nextErrors)
-    if (invalidFields.length > 0 || !form.category) {
+    if (invalidFields.length > 0 || !form.category || !selectedImage) {
       console.warn('[DonatePage] Submission stopped by validation.', {
         fields: invalidFields,
       })
@@ -142,8 +196,11 @@ export function DonatePage() {
     }
 
     setSubmitting(true)
-    setSubmissionStatus('saving')
+    setSubmissionStatus('uploading')
+    let uploadedImage: UploadedDonationImage | null = null
     try {
+      uploadedImage = await uploadDonationImage(selectedImage, user.id)
+      setSubmissionStatus('saving')
       const pickupTime = new Date(form.pickupTime)
       const pickupTimeIso = pickupTime.toISOString()
       console.info('[DonatePage] Calling donation insert.', {
@@ -160,7 +217,7 @@ export function DonatePage() {
         servings: Number(form.servings),
         pickup_location: form.location.trim(),
         pickup_time: pickupTimeIso,
-        image_url: form.imageUrl.trim(),
+        image_url: uploadedImage.publicUrl,
         status: 'available',
       })
       setSubmitted(donation)
@@ -169,8 +226,23 @@ export function DonatePage() {
         error instanceof Error
           ? error.message
           : 'We could not save this donation. Please try again.'
+      let finalMessage = message
+      if (uploadedImage) {
+        try {
+          await removeDonationImage(uploadedImage.path)
+        } catch (cleanupError) {
+          const cleanupMessage =
+            cleanupError instanceof Error
+              ? cleanupError.message
+              : 'The uploaded image could not be removed automatically.'
+          console.error('[DonatePage] Uploaded image cleanup failed after donation error.', {
+            message: cleanupMessage,
+          })
+          finalMessage = `${message} ${cleanupMessage}`
+        }
+      }
       console.error('[DonatePage] Donation submission failed.', { message })
-      setSubmitError(message)
+      setSubmitError(finalMessage)
     } finally {
       setSubmitting(false)
       setSubmissionStatus('idle')
@@ -185,8 +257,8 @@ export function DonatePage() {
         </p>
         <h1 className="mt-2 font-display text-4xl text-forest">Your donation is saved</h1>
         <p className="mt-3 text-forest/70">
-          Supabase confirmed “{submitted.title}” for your account. Other donation
-          views remain on demonstration data until their integration phase.
+          Supabase confirmed “{submitted.title}” for your account. You can view your
+          saved listing in My Donations.
         </p>
         <img
           src={submitted.image_url}
@@ -195,10 +267,13 @@ export function DonatePage() {
         />
         <button
           type="button"
-          className="mt-6 rounded-full bg-forest px-5 py-3 font-semibold text-cream"
+          className="mt-6 rounded-full bg-forest px-5 py-3 font-semibold text-cream transition hover:bg-forest-deep"
           onClick={() => {
             setSubmitted(null)
             setForm(emptyForm)
+            setSelectedImage(null)
+            setPreviewUrl(null)
+            if (imageInputRef.current) imageInputRef.current.value = ''
             setErrors({})
             setSubmitError(null)
           }}
@@ -245,7 +320,9 @@ export function DonatePage() {
         <p className="mt-4 rounded-2xl bg-sage px-4 py-3 text-sm text-forest" role="status" aria-live="polite">
           {submissionStatus === 'checking'
             ? 'Checking your donation details…'
-            : 'Saving your donation to FoodRescue…'}
+            : submissionStatus === 'uploading'
+              ? 'Uploading your image…'
+              : 'Saving your donation to FoodRescue…'}
         </p>
       ) : null}
       {validationMessages.length > 0 ? (
@@ -364,14 +441,31 @@ export function DonatePage() {
               className={inputClass}
             />
           </Field>
-          <Field label="Image URL" error={errors.imageUrl}>
+          <Field label="Donation image (required)" error={errors.image}>
             <input
-              value={form.imageUrl}
-              onChange={(event) => field('imageUrl', event.target.value)}
+              ref={imageInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => handleImageChange(event.currentTarget.files?.[0] ?? null)}
               className={inputClass}
-              placeholder="https://images.unsplash.com/..."
             />
           </Field>
+          <p className="-mt-3 mb-4 text-xs text-forest/60">
+            JPEG, PNG, or WebP · maximum 5 MB
+          </p>
+          {selectedImage ? (
+            <div className="-mt-2 mb-4 flex items-center justify-between gap-3 text-sm text-forest">
+              <span className="min-w-0 truncate">{selectedImage.name}</span>
+              <button
+                type="button"
+                onClick={removeSelectedImage}
+                disabled={submitting}
+                className="shrink-0 font-semibold text-forest underline underline-offset-2 transition hover:text-forest-deep disabled:cursor-not-allowed disabled:text-forest"
+              >
+                Remove image
+              </button>
+            </div>
+          ) : null}
           <Field label="Allergens (comma separated)">
             <input
               value={form.allergens}
@@ -383,12 +477,14 @@ export function DonatePage() {
           <button
             type="submit"
             disabled={submitting || authLoading}
-            className="mt-2 w-full rounded-full bg-forest py-3 font-semibold text-cream hover:bg-forest-deep disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-2 w-full rounded-full bg-forest py-3 font-semibold text-cream transition hover:bg-forest-deep disabled:cursor-not-allowed disabled:border disabled:border-forest/20 disabled:bg-sage disabled:text-forest"
           >
             {authLoading
               ? 'Checking sign-in…'
               : submitting
-                ? 'Saving donation…'
+                ? submissionStatus === 'uploading'
+                  ? 'Uploading image…'
+                  : 'Saving donation…'
                 : user
                   ? 'Save donation'
                   : 'Sign in to save donation'}
@@ -398,21 +494,21 @@ export function DonatePage() {
         <aside className="rounded-[1.8rem] bg-sage p-5 sm:p-7">
           <h2 className="font-display text-2xl text-forest">Image preview</h2>
           <p className="mt-2 text-sm text-forest/70">
-            Paste an image URL to see how the listing card will feel.
+            Preview the image selected for your listing.
           </p>
           <div className="mt-5 overflow-hidden rounded-[1.5rem] bg-white">
-            {previewReady ? (
+            {previewUrl && !imagePreviewFailed ? (
               <img
-                src={form.imageUrl.trim()}
+                src={previewUrl}
                 alt="Donation preview"
                 className="h-64 w-full object-cover"
-                onError={() => setImageFailed(true)}
+                onError={() => setImagePreviewFailed(true)}
               />
             ) : (
               <div className="grid h-64 place-items-center px-6 text-center text-sm text-forest/55">
-                {imageFailed
-                  ? 'That URL did not load an image. Try another http(s) link.'
-                  : 'Preview appears here once the URL is valid.'}
+                {imagePreviewFailed
+                  ? 'This file could not be previewed. Choose another image.'
+                  : 'Your selected image preview will appear here.'}
               </div>
             )}
           </div>

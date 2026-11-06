@@ -114,8 +114,9 @@ export function BrowsePage() {
       </p>
       <h1 className="mt-2 font-display text-4xl text-forest sm:text-5xl">Browse food</h1>
       <p className="mt-3 max-w-2xl text-forest/70">
-        Available listings from kitchens across the city. Search and filter in the
-        browser. Confirmed reservations are saved to your account.
+        Browse live food listings from kitchens across the city. Search and filter,
+        then reserve available food for pickup. Confirmed reservations are saved to
+        your account.
       </p>
 
       <div className="mt-6 grid gap-3 md:grid-cols-[1fr_auto]">
@@ -139,8 +140,8 @@ export function BrowsePage() {
             onClick={() => setCategory(item)}
             className={
               item === category
-                ? 'rounded-full bg-forest px-4 py-2 text-sm font-semibold whitespace-nowrap text-cream'
-                : 'rounded-full bg-white px-4 py-2 text-sm font-medium whitespace-nowrap text-forest ring-1 ring-forest/10'
+                ? 'rounded-full bg-forest px-4 py-2 text-sm font-semibold whitespace-nowrap text-cream transition hover:bg-forest-deep'
+                : 'rounded-full bg-white px-4 py-2 text-sm font-medium whitespace-nowrap text-forest ring-1 ring-forest/10 transition hover:bg-sage'
             }
           >
             {item === 'all' ? 'All' : CATEGORY_LABELS[item]}
@@ -152,7 +153,7 @@ export function BrowsePage() {
         type="button"
         onClick={() => void loadDonations()}
         disabled={loading}
-        className="mt-4 rounded-full bg-white px-4 py-2 text-sm font-medium text-forest ring-1 ring-forest/10 disabled:cursor-wait disabled:opacity-60"
+        className="mt-4 rounded-full bg-white px-4 py-2 text-sm font-medium text-forest ring-1 ring-forest/10 transition hover:bg-sage disabled:cursor-wait disabled:bg-sage disabled:text-forest disabled:ring-forest/20"
       >
         {loading ? 'Refreshing listings…' : 'Refresh listings'}
       </button>
@@ -174,7 +175,7 @@ export function BrowsePage() {
           <button
             type="button"
             onClick={() => void loadDonations()}
-            className="mt-5 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-cream"
+            className="mt-5 rounded-full bg-forest px-5 py-2.5 text-sm font-semibold text-cream transition hover:bg-forest-deep"
           >
             Try again
           </button>
@@ -228,7 +229,7 @@ export function BrowsePage() {
               </div>
               <button
                 type="button"
-                className="grid h-9 w-9 place-items-center rounded-full bg-white disabled:opacity-50"
+                className="grid h-9 w-9 place-items-center rounded-full bg-white text-forest transition hover:bg-sage disabled:bg-sage disabled:text-forest"
                 disabled={reserving}
                 onClick={() => setSelected(null)}
               >
@@ -263,7 +264,7 @@ export function BrowsePage() {
             {selected.status === 'available' ? (
               <button
                 type="button"
-                className="mt-6 w-full rounded-full bg-forest py-3 font-semibold text-cream disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-6 w-full rounded-full bg-forest py-3 font-semibold text-cream transition hover:bg-forest-deep disabled:cursor-not-allowed disabled:border disabled:border-forest/20 disabled:bg-sage disabled:text-forest"
                 disabled={authLoading || !user || user.user_metadata.role !== 'receiver' || reserving}
                 onClick={() => void handleReservation()}
               >

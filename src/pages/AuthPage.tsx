@@ -209,7 +209,7 @@ export function AuthPage() {
             <button
               type="submit"
               disabled={submitting || loading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest px-5 py-3 font-semibold text-cream transition hover:bg-forest-deep disabled:cursor-wait disabled:opacity-60"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-forest px-5 py-3 font-semibold text-cream transition hover:bg-forest-deep disabled:cursor-wait disabled:border disabled:border-forest/20 disabled:bg-sage disabled:text-forest"
             >
               {submitting || loading
                 ? 'Please wait…'

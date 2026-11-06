@@ -3,30 +3,25 @@ import {
   Building2,
   HeartHandshake,
   Leaf,
-  Recycle,
-  TimerReset,
-  Utensils,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { DemoNotice } from '../components/layout/DemoNotice'
 import { Footer } from '../components/layout/Footer'
 import { Navbar } from '../components/layout/Navbar'
 import { DEMO_DONATIONS, DEMO_IMPACT_STATS } from '../data/demo'
 
 const steps = [
   {
-    title: 'Kitchens list surplus',
-    copy: 'Restaurants, bakeries and grocers post what they cannot sell before close.',
-    icon: Utensils,
+    title: 'Donors list surplus',
+    copy: 'Share extra food available for collection.',
   },
   {
-    title: 'Charities reserve in minutes',
-    copy: 'Nearby organisations claim trays, crates and bakery boxes while they are still beautiful.',
-    icon: TimerReset,
+    title: 'Charities reserve',
+    copy: 'Find and reserve available food.',
   },
   {
-    title: 'Meals reach people, not bins',
-    copy: 'Collections happen the same evening. Impact is counted in meals, not landfill.',
-    icon: Recycle,
+    title: 'Food reaches people',
+    copy: 'Collect meals and reduce food waste.',
   },
 ]
 
@@ -59,14 +54,14 @@ export function LandingPage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 to="/browse"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-harvest px-6 py-3 font-semibold text-forest-deep"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-harvest px-6 py-3 font-semibold text-forest-deep transition hover:bg-cream"
               >
                 Browse available food
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 to="/donate"
-                className="inline-flex items-center justify-center rounded-full border border-cream/30 px-6 py-3 font-semibold text-cream"
+                className="inline-flex items-center justify-center rounded-full border border-cream bg-forest-deep px-6 py-3 font-semibold !text-cream transition hover:bg-forest hover:!text-cream focus-visible:!text-cream"
               >
                 List a donation
               </Link>
@@ -82,30 +77,28 @@ export function LandingPage() {
             <Stat value={`${DEMO_IMPACT_STATS.charities}`} label="Charity kitchens" />
           </div>
         </section>
+        <div className="mx-auto max-w-6xl px-4 pt-4 sm:px-6">
+          <DemoNotice />
+        </div>
 
-        <section className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-harvest-deep">
-            How it works
-          </p>
-          <h2 className="mt-3 max-w-2xl font-display text-4xl text-forest sm:text-5xl">
-            A graceful loop from close of service to community table.
+        <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+          <h2 className="font-display text-3xl text-forest sm:text-4xl">
+            Three steps. Less food waste.
           </h2>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
             {steps.map((step, index) => {
-              const Icon = step.icon
               return (
                 <article
                   key={step.title}
-                  className="rounded-[2rem] border border-forest/10 bg-white p-7 shadow-[0_20px_50px_rgba(23,61,49,0.05)]"
+                  className="flex min-w-0 flex-col items-start gap-3 rounded-2xl border border-forest/10 bg-white p-4 sm:p-5"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="grid h-11 w-11 place-items-center rounded-full bg-sage text-forest">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span className="font-display text-4xl text-forest/15">0{index + 1}</span>
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-sage font-display text-lg font-semibold text-forest">
+                    0{index + 1}
+                  </span>
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <h3 className="font-semibold text-forest">{step.title}</h3>
+                    <p className="text-sm leading-6 text-forest/70">{step.copy}</p>
                   </div>
-                  <h3 className="mt-8 font-display text-2xl text-forest">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-7 text-forest/70">{step.copy}</p>
                 </article>
               )
             })}
