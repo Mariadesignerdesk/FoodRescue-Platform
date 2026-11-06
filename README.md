@@ -93,3 +93,7 @@ src/
   pages/        Route-level pages
   types/        Shared TypeScript domain types
 ```
+
+## AI Agent Development Skill
+
+FoodRescue includes reusable AI agent development instructions in the [FoodRescue development Skill](.github/skills/foodrescue-development/SKILL.md). It guides agents on project architecture, Supabase workflows, coding practices, and verification.
